@@ -26,7 +26,7 @@ export async function onRequestPost({ request, env }) {
   url.searchParams.set("status", "lead");
   url.searchParams.set("tid", crypto.randomUUID());
   try {
-    const response = await fetch(url.toString(), { method: "GET", redirect: "error" });
+    const response = await fetch(url.toString(), { method: "GET", redirect: "manual" });
     if (!response.ok) {
       console.error("LEGION lead-click: Keitaro returned HTTP", response.status);
       // Distinct status to distinguish a Keitaro response from an edge-generated 502.
