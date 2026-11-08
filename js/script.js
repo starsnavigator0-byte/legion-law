@@ -40,6 +40,53 @@ if (menuToggle && navigation) {
 }
 
 
+// Save the click ID supplied by Keitaro for form attribution.
+// sessionStorage persists across navigation in this tab, but not indefinitely.
+const KEITARO_SUBID_KEY = "legion_keitaro_subid";
+function getKeitaroSubid() {
+    const fromUrl = new URLSearchParams(window.location.search).get("subid");
+    const validSubid = (value) => typeof value === "string" &&
+        /^[a-zA-Z0-9._-]{1,128}$/.test(value) && value !== "subid";
+    try {
+        if (validSubid(fromUrl)) {
+            sessionStorage.setItem(KEITARO_SUBID_KEY, fromUrl);
+            return fromUrl;
+        }
+        const saved = sessionStorage.getItem(KEITARO_SUBID_KEY);
+        return validSubid(saved) ? saved : "";
+    } catch (_) {
+        return validSubid(fromUrl) ? fromUrl : "";
+    }
+}
+// Capture the ID before the visitor navigates to another page.
+getKeitaroSubid();
+
+// Count a click on "Отправить заявку" as a Keitaro Lead attempt.
+// This is intentionally NOT confirmation that a form was saved.
+// A Pages Function keeps the private Keitaro postback URL off the public site.
+function trackLeadButtonClick() {
+    const subid = getKeitaroSubid();
+    if (!subid) return; // No attributable campaign click.
+
+    // Prevent accidental double-counting from repeated presses in the same tab.
+    const key = "legion_lead_button_" + subid;
+    try {
+        if (sessionStorage.getItem(key) === "1") return;
+        sessionStorage.setItem(key, "1");
+    } catch (_) { /* storage unavailable: proceed */ }
+
+    const payload = JSON.stringify({subid});
+    const endpoint = "/api/lead-click";
+    try {
+        if (navigator.sendBeacon) {
+            const queued = navigator.sendBeacon(endpoint, new Blob([payload], {type: "text/plain"}));
+            if (queued) return;
+        }
+        fetch(endpoint, {method: "POST", headers: {"Content-Type": "text/plain"},
+            body: payload, keepalive: true, credentials: "same-origin"}).catch(() => {});
+    } catch (_) { /* Lead attempt must never break form submission. */ }
+}
+
 // CONTACT FORM
 
 const contactForm = document.getElementById("contactForm");
@@ -49,6 +96,12 @@ const GOOGLE_SCRIPT_URL =
     "https://script.google.com/macros/s/AKfycbzoWX8SMQl8muhtRDv8df0SaxOwm11_-eaAJz9tSlQimlEe4k6ONSzokyG_w-mJT4QU/exec";
 
 if (contactForm && formMessage) {
+
+    const submitButtonForTracking = contactForm.querySelector('[type="submit"]');
+    if (submitButtonForTracking) {
+        // Real button clicks, including when HTML validation prevents submit.
+        submitButtonForTracking.addEventListener("click", trackLeadButtonClick);
+    }
 
     let requestInProgress = false;
 
@@ -85,7 +138,8 @@ if (contactForm && formMessage) {
             email: document.getElementById("clientEmail").value.trim(),
             phone: document.getElementById("clientPhone").value.trim(),
             description: document.getElementById("clientMessage").value.trim(),
-            website: honeypot ? honeypot.value.trim() : ""
+            website: honeypot ? honeypot.value.trim() : "",
+            subid: getKeitaroSubid()
         });
 
         try {
@@ -96,8 +150,9 @@ if (contactForm && formMessage) {
                 body: data
             });
 
+            // A no-cors response is opaque: it does not confirm the row was saved.
             formMessage.textContent =
-                "Ваш запрос передан на обработку. Если потребуется, мы свяжемся с вами.";
+                "Запрос отправлен. Если потребуется, мы свяжемся с вами.";
 
             contactForm.reset();
 
