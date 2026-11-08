@@ -27,9 +27,14 @@ export async function onRequestPost({ request, env }) {
   url.searchParams.set("tid", crypto.randomUUID());
   try {
     const response = await fetch(url.toString(), { method: "GET", redirect: "error" });
-    if (!response.ok) return new Response("Upstream error", { status: 502 });
+    if (!response.ok) {
+      console.error("Keitaro postback: upstream HTTP status", response.status);
+      return new Response("Upstream error", { status: 502 });
+    }
     return new Response(null, { status: 204 });
-  } catch (_) {
+  } catch (error) {
+    // Log only the error class: exception messages can contain the secret postback URL.
+    console.error("Keitaro postback: fetch failed", error?.name || "UnknownError");
     return new Response("Upstream unavailable", { status: 502 });
   }
 }
