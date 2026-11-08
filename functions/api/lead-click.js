@@ -28,13 +28,14 @@ export async function onRequestPost({ request, env }) {
   try {
     const response = await fetch(url.toString(), { method: "GET", redirect: "error" });
     if (!response.ok) {
-      console.error("Keitaro postback: upstream HTTP status", response.status);
-      return new Response("Upstream error", { status: 502 });
+      console.error("LEGION lead-click: Keitaro returned HTTP", response.status);
+      // Distinct status to distinguish a Keitaro response from an edge-generated 502.
+      return new Response("Postback upstream rejected", { status: 424 });
     }
     return new Response(null, { status: 204 });
   } catch (error) {
     // Log only the error class: exception messages can contain the secret postback URL.
-    console.error("Keitaro postback: fetch failed", error?.name || "UnknownError");
-    return new Response("Upstream unavailable", { status: 502 });
+    console.error("LEGION lead-click: Keitaro fetch failed", error?.name || "UnknownError");
+    return new Response("Postback connection failed", { status: 503 });
   }
 }

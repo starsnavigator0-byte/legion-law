@@ -61,30 +61,40 @@ function getKeitaroSubid() {
 // Capture the ID before the visitor navigates to another page.
 getKeitaroSubid();
 
-// Count a click on "Отправить заявку" as a Keitaro Lead attempt.
-// This is intentionally NOT confirmation that a form was saved.
-// A Pages Function keeps the private Keitaro postback URL off the public site.
-function trackLeadButtonClick() {
+// Lead = an attempt to press "Отправить заявку", even when HTML validation fails.
+// The independent click handler runs before the form submit validation.
+// A retry is possible after a failed HTTP response; never lock out the click in advance.
+const inFlightLeadClicks = new Set();
+async function trackLeadButtonClick() {
     const subid = getKeitaroSubid();
     if (!subid) return; // No attributable campaign click.
 
-    // Prevent accidental double-counting from repeated presses in the same tab.
     const key = "legion_lead_button_" + subid;
     try {
         if (sessionStorage.getItem(key) === "1") return;
-        sessionStorage.setItem(key, "1");
-    } catch (_) { /* storage unavailable: proceed */ }
+    } catch (_) { /* Continue if storage is unavailable. */ }
+    if (inFlightLeadClicks.has(subid)) return;
+    inFlightLeadClicks.add(subid);
 
-    const payload = JSON.stringify({subid});
-    const endpoint = "/api/lead-click";
     try {
-        if (navigator.sendBeacon) {
-            const queued = navigator.sendBeacon(endpoint, new Blob([payload], {type: "text/plain"}));
-            if (queued) return;
+        const response = await fetch("/api/lead-click", {
+            method: "POST",
+            headers: {"Content-Type": "text/plain;charset=UTF-8"},
+            body: JSON.stringify({ subid }),
+            credentials: "same-origin",
+            keepalive: true
+        });
+        if (!response.ok) {
+            // No PII or postback secret is logged.
+            console.warn("LEGION: lead-click endpoint returned HTTP", response.status);
+            return; // Do not mark as delivered: the next press may retry.
         }
-        fetch(endpoint, {method: "POST", headers: {"Content-Type": "text/plain"},
-            body: payload, keepalive: true, credentials: "same-origin"}).catch(() => {});
-    } catch (_) { /* Lead attempt must never break form submission. */ }
+        try { sessionStorage.setItem(key, "1"); } catch (_) {}
+    } catch (_) {
+        console.warn("LEGION: lead-click endpoint is unreachable");
+    } finally {
+        inFlightLeadClicks.delete(subid);
+    }
 }
 
 // CONTACT FORM
