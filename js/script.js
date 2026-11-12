@@ -142,12 +142,21 @@ if (contactForm && formMessage) {
 
         formMessage.textContent = "Отправляем заявку...";
 
+        const lossAmount = document.getElementById("lossAmount").value;
+        const description = document.getElementById("clientMessage").value.trim();
+        // Include the range in the existing description field so older Google Apps Script
+        // receivers still retain it, even if they ignore the new lossAmount parameter.
+        const fullDescription = lossAmount
+            ? `Сумма потери: ${lossAmount}\n${description}`
+            : description;
+
         const data = new URLSearchParams({
             name: document.getElementById("clientName").value.trim(),
             country: document.getElementById("clientCountry").value.trim(),
-            email: document.getElementById("clientEmail").value.trim(),
+            email: "", // Retain the parameter for compatibility with the existing Google Apps Script.
             phone: document.getElementById("clientPhone").value.trim(),
-            description: document.getElementById("clientMessage").value.trim(),
+            description: fullDescription,
+            lossAmount: lossAmount,
             website: honeypot ? honeypot.value.trim() : "",
             subid: getKeitaroSubid()
         });

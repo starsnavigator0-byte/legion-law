@@ -536,16 +536,15 @@
                         <option value="Казахстан">Казахстан</option>
                         <option value="Другая страна">Другая страна</option>
                     </select>
-
-                    <label for="clientEmail">Электронная почта</label>
-                    <input
-                        type="email"
-                        id="clientEmail"
-                        name="clientEmail"
-                        placeholder="example@email.com"
-                        required
-                    >
-<label for="clientPhone">Номер телефона</label>
+                    <label for="lossAmount">Сумма потери (если столкнулись с мошенничеством)</label>
+                    <select id="lossAmount" name="lossAmount">
+                        <option value="">Выберите сумму потери (необязательно)</option>
+                        <option value="1–100 $">1–100 $</option>
+                        <option value="100–1 000 $">100–1 000 $</option>
+                        <option value="1 000–10 000 $">1 000–10 000 $</option>
+                        <option value="10 000–100 000 $ и более">10 000–100 000 $ и более</option>
+                    </select>
+                    <label for="clientPhone">Номер телефона</label>
 <input
     type="tel"
     id="clientPhone"
