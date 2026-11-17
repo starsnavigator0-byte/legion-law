@@ -1165,3 +1165,63 @@ a {
         width: 100%;
     }
 }
+
+/* Six service blocks: fit within viewport without sideways scrolling */
+.services-grid--cases {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    gap: 20px;
+    width: 100%;
+    min-width: 0;
+}
+
+.service-card--case {
+    min-width: 0;
+}
+
+.service-card--case .service-body {
+    padding: 22px 22px 26px;
+}
+
+.service-card--case h3 {
+    font-size: clamp(23px, 1.9vw, 28px);
+    overflow-wrap: anywhere;
+}
+
+.service-card--case p {
+    overflow-wrap: anywhere;
+}
+
+.service-card--case .service-link {
+    max-width: 100%;
+    white-space: normal;
+    text-align: center;
+}
+
+@media (max-width: 1050px) {
+    .services-grid--cases {
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+    }
+}
+
+@media (max-width: 700px) {
+    .services-grid--cases {
+        grid-template-columns: minmax(0, 1fr);
+        gap: 18px;
+    }
+
+    .service-card--case {
+        padding: 0;
+    }
+
+    .service-card--case .service-media {
+        aspect-ratio: 16 / 8;
+    }
+
+    .service-card--case .service-body {
+        padding: 20px;
+    }
+
+    .service-card--case h3 {
+        font-size: clamp(23px, 6vw, 30px);
+    }
+}
